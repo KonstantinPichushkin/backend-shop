@@ -14,3 +14,9 @@ class ProductCreate(BaseModel):
     name : str
     description : str | None = None
     price : Decimal
+
+
+class ProductUpdate(BaseModel):
+    name : str | None = None
+    description : str | None = None
+    price : Decimal | None = None
