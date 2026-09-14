@@ -1,14 +1,17 @@
-from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 
 from app.db.database import get_session
 from app.schemas.product import ProductRead, ProductCreate, ProductUpdate
 from app.services import product as product_service
 
-app = FastAPI()
+router = APIRouter(
+    prefix="/products",
+    tags=["Products"]
+    )
 
-@app.get(
-    "/products", 
+@router.get(
+    "/", 
     response_model=list[ProductRead]
 )
 def get_products(
@@ -17,8 +20,8 @@ def get_products(
     return product_service.get_products(session)
 
 
-@app.get(
-    "/products/{product_id}", 
+@router.get(
+    "/{product_id}", 
     response_model=ProductRead
 )
 def get_product(
@@ -36,8 +39,8 @@ def get_product(
     return product
             
 
-@app.post(
-    "/products",
+@router.post(
+    "/",
     response_model=ProductRead,
     status_code=status.HTTP_201_CREATED
 )
@@ -51,8 +54,8 @@ def create_product(
     )
 
 
-@app.delete(
-    "/products/{product_id}",
+@router.delete(
+    "/{product_id}",
     status_code=status.HTTP_204_NO_CONTENT
 )
 def delete_product(
@@ -70,8 +73,8 @@ def delete_product(
     return None        
     
 
-@app.put(
-    "/products/{product_id}",
+@router.put(
+    "/{product_id}",
     response_model=ProductRead
 )
 def replace_product(
@@ -93,8 +96,8 @@ def replace_product(
     return product
 
 
-@app.patch(
-    "/products/{product_id}",
+@router.patch(
+    "/{product_id}",
     response_model=ProductRead
 )
 def update_product(
