@@ -1,11 +1,9 @@
 from fastapi import FastAPI, HTTPException, status, Depends
-from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
-from app.models.product import Product
 from app.db.database import get_session
 from app.schemas.product import ProductRead, ProductCreate, ProductUpdate
-
+from app.services import product as product_service
 
 app = FastAPI()
 
@@ -16,11 +14,7 @@ app = FastAPI()
 def get_products(
     session: Session = Depends(get_session)
 ):
-    query = select(Product)
-    result = session.execute(query)
-    products = result.scalars().all()
-
-    return products
+    return product_service.get_products(session)
 
 
 @app.get(
@@ -31,8 +25,7 @@ def get_product(
     product_id: int,
     session: Session = Depends(get_session)
 ):
-    query = select(Product).where(Product.id == product_id)
-    product = session.scalar(query)
+    product = product_service.get_product(session, product_id)
 
     if product is None:
         raise HTTPException(
@@ -49,19 +42,13 @@ def get_product(
     status_code=status.HTTP_201_CREATED
 )
 def create_product(
-    product: ProductCreate,
+    product_data: ProductCreate,
     session: Session = Depends(get_session)
 ):   
-    new_product = Product(
-        name=product.name,
-        description=product.description,
-        price=product.price
+    return product_service.create_product(
+        session,
+        product_data
     )
-    session.add(new_product)
-    session.commit()
-    session.refresh(new_product)
-
-    return new_product
 
 
 @app.delete(
@@ -72,16 +59,16 @@ def delete_product(
     product_id: int,
     session: Session = Depends(get_session)
 ):
-    query = delete(Product).where(Product.id == product_id)
-    result = session.execute(query)
+    deleted = product_service.delete_product(session, product_id)
 
-    if result.rowcount == 0:
+    if not deleted:
         raise HTTPException(
             status_code=404,
             detail="Product not found"
         )
-            
-    session.commit()
+
+    return None        
+    
 
 @app.put(
     "/products/{product_id}",
@@ -92,20 +79,17 @@ def replace_product(
     product_data: ProductCreate,
     session: Session = Depends(get_session)
 ):
-    query = select(Product).where(Product.id == product_id)
-    product = session.scalar(query)
+    product = product_service.replace_product(
+        session=session,
+        product_id=product_id,
+        product_data=product_data
+    )
     if product is None:
         raise HTTPException(
             status_code=404,
             detail="Product not found"
         )
-    product.name = product_data.name
-    product.description = product_data.description
-    product.price = product_data.price
-
-    session.commit()
-    session.refresh(product)
-
+   
     return product
 
 
@@ -118,19 +102,16 @@ def update_product(
     product_data: ProductUpdate,
     session: Session = Depends(get_session)
 ):
-    query = select(Product).where(Product.id == product_id)
-    product = session.scalar(query)
+    product = product_service.update_product(
+            session=session,
+            product_id=product_id,
+            product_data=product_data
+    )
     if product is None:
         raise HTTPException(
             status_code=404,
             detail="Product not found"
         )
-    updates = product_data.model_dump(exclude_unset=True)
-    for field, value in updates.items():
-        setattr(product, field, value)
-
-    session.commit()
-    session.refresh(product)
 
     return product
         
