@@ -9,8 +9,8 @@ class Base(DeclarativeBase):
 
 
 def get_session():
-    with SessionLocal() as session:
+    with session_factory() as session:
         yield session
 
 engine = create_engine(url=settings.database_url)
-SessionLocal = sessionmaker(bind=engine)
+session_factory = sessionmaker(bind=engine)
